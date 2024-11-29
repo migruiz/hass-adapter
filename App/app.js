@@ -16,13 +16,22 @@ const wintercatReadings = new Observable(async subscriber => {
 const sharedReadings = wintercatReadings.pipe(share())
 
 const houseCatReadings = sharedReadings.pipe(
-    filter(r => r.channel === "3")
+    filter(r => r.messageType === "oregonReading" && r.channel === "3")
 )
 
 const outsideReadings = sharedReadings.pipe(
-    filter(r => r.channel === "1")
+    filter(r => r.messageType === "oregonReading" && r.channel === "1")
 )
 
+const heatingRelayReadings = sharedReadings.pipe(
+    filter(r => r.messageType === "relayChange"),
+    map(r => r.value ? 'ON' : 'OFF')
+)
+
+heatingRelayReadings
+    .subscribe(async m => {
+        (await mqtt.getClusterAsync()).publishMessage('WINTERCAT/heating/relay', m)
+    })
 
 
 houseCatReadings
