@@ -2,7 +2,7 @@ version: 2.1
 executors:
   docker-publisher:
     environment:
-      IMAGE_NAME: migruiz/attic
+      IMAGE_NAME: migruiz/hass-adapter
     docker:
       - image: circleci/buildpack-deps:stretch
 jobs:

@@ -4,7 +4,8 @@ const {  map,shareReplay,startWith, filter,switchMap, distinctUntilChanged} = re
 global.mtqqLocalPath = process.env.MQTTLOCAL;
 global.mtqqLocalPath = 'mqtt://192.168.0.11';
 
-
+console.log("adapter")
+return;
 
 
 const rawDoorSensor = new Observable(async subscriber => {  
