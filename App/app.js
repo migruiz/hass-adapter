@@ -19,6 +19,10 @@ const houseCatReadings = sharedReadings.pipe(
     filter(r => r.channel === "3")
 )
 
+const outsideReadings = sharedReadings.pipe(
+    filter(r => r.channel === "1")
+)
+
 
 
 houseCatReadings
@@ -27,5 +31,8 @@ houseCatReadings
     })
 
 
-
+outsideReadings
+    .subscribe(async m => {
+        (await mqtt.getClusterAsync()).publishData('WINTERCAT/outside/weather', m)
+    })
 
