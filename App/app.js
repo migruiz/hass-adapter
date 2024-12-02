@@ -1,5 +1,5 @@
 const { Observable, from, of } = require('rxjs'); var mqtt = require('./mqttCluster.js');
-const { map, shareReplay, startWith, filter, switchMap, distinctUntilChanged, share } = require('rxjs/operators');
+const { map, shareReplay, startWith, filter, switchMap, distinctUntilChanged, share, scan } = require('rxjs/operators');
 
 global.mtqqLocalPath = process.env.MQTTLOCAL;
 global.mtqqLocalPath = 'mqtt://192.168.0.11';
@@ -13,15 +13,36 @@ const wintercatReadings = new Observable(async subscriber => {
     });
 });
 
+
+const getZoneTempStream = ({ sharedReadings, channel }) => {
+    return sharedReadings.pipe(
+        filter(r => r.messageType === "oregonReading" && r.channel === channel),
+        map(r => ({ ...r, timestamp: (new Date()).getTime() })),
+        scan((acc, curr) => {
+            const currentTemperature = parseFloat(curr.temperature)
+            if (!acc.prevTemperature || (new Date()).getTime() - acc.timestamp > 30 * 60 * 1000 || Math.abs(currentTemperature - acc.prevTemperature) < 10) {
+                return {
+                    ...curr,
+                    prevTemperature: currentTemperature,
+                    processMessage: true
+                }
+            }
+            else {
+                return {
+                    ...acc,
+                    processMessage: false
+                }
+            }
+        }, {}),
+        filter(r => r.processMessage)
+    )
+}
+
 const sharedReadings = wintercatReadings.pipe(share())
 
-const houseCatReadings = sharedReadings.pipe(
-    filter(r => r.messageType === "oregonReading" && r.channel === "3")
-)
+const houseCatReadings = getZoneTempStream({ sharedReadings, channel: "3" })
 
-const outsideReadings = sharedReadings.pipe(
-    filter(r => r.messageType === "oregonReading" && r.channel === "1")
-)
+const outsideReadings =  getZoneTempStream({ sharedReadings, channel: "1" })
 
 const heatingRelayReadings = sharedReadings.pipe(
     filter(r => r.messageType === "relayChange"),
