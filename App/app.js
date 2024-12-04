@@ -6,6 +6,8 @@ global.mtqqLocalPath = 'mqtt://192.168.0.11';
 
 
 
+
+
 const wintercatReadings = new Observable(async subscriber => {
     var mqttCluster = await mqtt.getClusterAsync()
     mqttCluster.subscribeData('WINTERCAT/readings', function (content) {
@@ -42,16 +44,30 @@ const sharedReadings = wintercatReadings.pipe(share())
 
 const houseCatReadings = getZoneTempStream({ sharedReadings, channel: "3" })
 
-const outsideReadings =  getZoneTempStream({ sharedReadings, channel: "1" })
+const outsideReadings = getZoneTempStream({ sharedReadings, channel: "1" })
 
 const heatingRelayReadings = sharedReadings.pipe(
     filter(r => r.messageType === "relayChange"),
     map(r => r.value ? 'ON' : 'OFF')
 )
 
+
+const scaleReadings = sharedReadings.pipe(
+    filter(r => r.messageType === "scale"),
+    filter(r => r.value > -5000),
+    map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10).toFixed(1) }))
+)
+
+
 heatingRelayReadings
     .subscribe(async m => {
         (await mqtt.getClusterAsync()).publishMessage('WINTERCAT/heating/relay', m)
+    })
+
+
+scaleReadings
+    .subscribe(async m => {
+        (await mqtt.getClusterAsync()).publishData('WINTERCAT/scale', m)
     })
 
 
