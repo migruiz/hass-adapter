@@ -52,7 +52,20 @@ const heatingRelayReadings = sharedReadings.pipe(
 )
 
 
-const historyNumber = 10
+const HISTORY_NUMBER = 10
+const CAT_WEIGHT_THRESHOLD = 3
+
+const estimatePresence = ({ valuekg: currentKg, averageKg }) => {
+    if (Math.abs(currentKg - averageKg) < CAT_WEIGHT_THRESHOLD) {
+        return 'noChange'
+    }
+    if (currentKg - averageKg >= CAT_WEIGHT_THRESHOLD) {
+        return 'catIn'
+    }
+    if (currentKg - averageKg <= -1 * CAT_WEIGHT_THRESHOLD) {
+        return 'catOut'
+    }
+}
 
 const scaleReadings = sharedReadings.pipe(
     filter(r => r.messageType === "scale"),
@@ -61,18 +74,24 @@ const scaleReadings = sharedReadings.pipe(
     scan((acc, curr) => {
         return {
             ...curr,
-            history: [curr.valuekg, ...acc.history].slice(0,historyNumber)
+            history: [curr.valuekg, ...acc.history].slice(0, HISTORY_NUMBER)
         }
     }, { history: [] }),
-    map(r=> ({
+    map(r => ({
         ...r,
         averageKg: r.history.reduce((sum, currentValue) => sum + currentValue, 0) / r.history.length
     })),
-    map(r=>({
+    map(r => ({
         ...r,
-        averageKg:(Math.round(r.averageKg * 10 ) / 10),
-        stableReading: r.history.length==historyNumber
-    }))
+        averageKg: (Math.round(r.averageKg * 10) / 10),
+        stableReading: r.history.length == HISTORY_NUMBER
+    })),
+    map(r => (
+        {
+            ...r,
+            estimatedPresence: estimatePresence(r)
+        }
+    ))
 )
 
 
