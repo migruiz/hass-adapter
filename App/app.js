@@ -52,14 +52,21 @@ const heatingRelayReadings = sharedReadings.pipe(
 )
 
 
-const HISTORY_NUMBER = 10
+const HISTORY_NUMBER = 4
 const CAT_HOUSE_WEIGHT = 5
 const CAT_WEIGHT_THRESHOLD = 3
 
-const estimateAction = ({ valuekg: currentKg, averageKg, history }) => {
-    if (history.length<HISTORY_NUMBER){
-        return 'unknown'
+const getCatState = ({ estimatedAction, prevCatState, averageKg }) => {
+    if (!prevCatState) {
+        return averageKg - CAT_HOUSE_WEIGHT < CAT_WEIGHT_THRESHOLD ? 'catOut' : 'catIn'
     }
+    if (estimatedAction === 'noChange') {
+        return prevCatState
+    }
+    return estimatedAction;
+}
+
+const estimateAction = ({ valuekg: currentKg, averageKg }) => {
     if (Math.abs(currentKg - averageKg) < CAT_WEIGHT_THRESHOLD) {
         return 'noChange'
     }
@@ -83,6 +90,11 @@ const scaleReadings = sharedReadings.pipe(
     }, { history: [] }),
     map(r => ({
         ...r,
+        stableReading: r.history.length==HISTORY_NUMBER,
+    })),
+    filter(r=> r.stableReading),
+    map(r => ({
+        ...r,
         averageKg: r.history.reduce((sum, currentValue) => sum + currentValue, 0) / r.history.length
     })),
     map(r => ({
@@ -95,8 +107,12 @@ const scaleReadings = sharedReadings.pipe(
             estimatedAction: estimateAction(r)
         }
     )),
-    //filter(r=> r.estimatedPresence==='catIn' || r.estimatedPresence==='catOut'),
-    //map(({estimatePresence})=> ({estimatePresence})),
+    scan((acc, curr) => {
+        return {
+            ...curr,
+            prevCatState: getCatState({ ...curr, prevCatState: acc.prevCatState })
+        }
+    }, {  }),
 
 )
 
