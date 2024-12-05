@@ -92,19 +92,28 @@ const scaleReadings = sharedReadings.pipe(
         const stableReadings = newHistory.length === HISTORY_NUMBER
         if (!stableReadings) {
             return {
-                history: newHistory
+                history: newHistory,
+                catState: acc.catState
             }
         }
         const averageKg = getAverageKg(newHistory)
         const estimatedAction = estimateAction({ currentKg: curr.valuekg, averageKg })
         const catState = getCatState({ estimatedAction, prevCatState: acc.catState, averageKg })
-        return {
-            ...curr,
-            processMessage: true,
-            history: newHistory,
-            averageKg,
-            estimatedAction,
-            catState
+        if (acc.catState && catState !== acc.catState) {
+            return {
+                history: [],
+                catState: acc.catState
+            }
+        }
+        else {
+            return {
+                ...curr,
+                processMessage: true,
+                history: newHistory,
+                averageKg,
+                estimatedAction,
+                catState
+            }
         }
     }, { history: [] }),
     filter(r => r.processMessage)
