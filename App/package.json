@@ -1,13 +1,9 @@
 {
-  "name": "entrance-lights",
+  "name": "hass-adapter",
   "version": "0.0.0",
-  "description": "entrance-lights",
+  "description": "hass-adapter",
   "main": "app.js",
   "author": {
     "name": "miguel"
-  },
-  "dependencies": {
-    "mqtt": "~2.18.2",
-    "rxjs": "^6.5.2"
   }
 }

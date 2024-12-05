@@ -56,12 +56,15 @@ const HISTORY_NUMBER = 4
 const CAT_HOUSE_WEIGHT = 5
 const CAT_WEIGHT_THRESHOLD = 3
 
-const getAverageKg =(history)=>{
+const getAverageKg = (history) => {
     const average = history.reduce((sum, currentValue) => sum + currentValue, 0) / history.length
-    return (Math.round(average* 10) / 10)
+    return (Math.round(average * 10) / 10)
 }
 
-const getCatState = ({ estimatedAction, prevCatState, averageKg }) => {
+const getCatState = ({ estimatedAction, prevCatState, averageKg, stableReadings }) => {
+    if (!stableReadings) {
+        return 'unknown';
+    }
     if (!prevCatState) {
         return averageKg - CAT_HOUSE_WEIGHT < CAT_WEIGHT_THRESHOLD ? 'catOut' : 'catIn'
     }
@@ -71,7 +74,7 @@ const getCatState = ({ estimatedAction, prevCatState, averageKg }) => {
     return estimatedAction;
 }
 
-const estimateAction = ({ valuekg: currentKg, averageKg }) => {
+const estimateAction = ({ currentKg, averageKg }) => {
     if (Math.abs(currentKg - averageKg) < CAT_WEIGHT_THRESHOLD) {
         return 'noChange'
     }
@@ -89,26 +92,25 @@ const scaleReadings = sharedReadings.pipe(
     map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10) })),
     scan((acc, curr) => {
         const newHistory = [curr.valuekg, ...acc.history].slice(0, HISTORY_NUMBER)
+        const stableReadings = newHistory.length === HISTORY_NUMBER
+        if (!stableReadings) {
+            return {
+                history: newHistory,
+                ignoreEmission: true
+            }
+        }
         const averageKg = getAverageKg(newHistory)
+        const estimatedAction = estimateAction({ currentKg: curr.valuekg, averageKg })
+        const catState = getCatState({estimatedAction, prevCatState: acc.catState, averageKg, stableReadings})
         return {
             ...curr,
             history: newHistory,
-            averageKg
+            averageKg,
+            estimatedAction,
+            catState
         }
     }, { history: [] }),
-    filter(r=> r.history.length==HISTORY_NUMBER),
-    map(r => (
-        {
-            ...r,
-            estimatedAction: estimateAction(r)
-        }
-    )),
-    scan((acc, curr) => {
-        return {
-            ...curr,
-            prevCatState: getCatState({ ...curr, prevCatState: acc.prevCatState })
-        }
-    }, {  }),
+
 
 )
 
