@@ -52,16 +52,27 @@ const heatingRelayReadings = sharedReadings.pipe(
 )
 
 
+const historyNumber = 10
+
 const scaleReadings = sharedReadings.pipe(
     filter(r => r.messageType === "scale"),
     filter(r => r.value > -5000),
-    map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10).toFixed(1) })),
+    map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10) })),
     scan((acc, curr) => {
         return {
             ...curr,
-            history: [curr.valuekg, ...acc.history].slice(0,5)
+            history: [curr.valuekg, ...acc.history].slice(0,historyNumber)
         }
-    }, { history: [] })
+    }, { history: [] }),
+    map(r=> ({
+        ...r,
+        averageKg: r.history.reduce((sum, currentValue) => sum + currentValue, 0) / r.history.length
+    })),
+    map(r=>({
+        ...r,
+        averageKg:(Math.round(r.averageKg * 10 ) / 10),
+        stableReading: r.history.length==historyNumber
+    }))
 )
 
 
