@@ -55,8 +55,23 @@ const heatingRelayReadings = sharedReadings.pipe(
 const scaleReadings = sharedReadings.pipe(
     filter(r => r.messageType === "scale"),
     filter(r => r.value > -5000),
-    map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10).toFixed(1) }))
+    map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10).toFixed(1) })),
+    scan((acc, curr)=>{
+        return {
+            ...curr,
+            history:[...acc.history, curr.valuekg]
+        }
+    }, {history:[]})
 )
+
+
+scaleReadings
+    .subscribe(async m => {
+       console.log(JSON.stringify(m))
+    })
+
+
+    return;
 
 
 heatingRelayReadings
@@ -65,10 +80,7 @@ heatingRelayReadings
     })
 
 
-scaleReadings
-    .subscribe(async m => {
-        (await mqtt.getClusterAsync()).publishData('WINTERCAT/scale', m)
-    })
+
 
 
 houseCatReadings
