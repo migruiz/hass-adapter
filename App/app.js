@@ -61,10 +61,7 @@ const getAverageKg = (history) => {
     return (Math.round(average * 10) / 10)
 }
 
-const getCatState = ({ estimatedAction, prevCatState, averageKg, stableReadings }) => {
-    if (!stableReadings) {
-        return 'unknown';
-    }
+const getCatState = ({ estimatedAction, prevCatState, averageKg }) => {
     if (!prevCatState) {
         return averageKg - CAT_HOUSE_WEIGHT < CAT_WEIGHT_THRESHOLD ? 'catOut' : 'catIn'
     }
@@ -95,21 +92,22 @@ const scaleReadings = sharedReadings.pipe(
         const stableReadings = newHistory.length === HISTORY_NUMBER
         if (!stableReadings) {
             return {
-                history: newHistory,
-                ignoreEmission: true
+                history: newHistory
             }
         }
         const averageKg = getAverageKg(newHistory)
         const estimatedAction = estimateAction({ currentKg: curr.valuekg, averageKg })
-        const catState = getCatState({estimatedAction, prevCatState: acc.catState, averageKg, stableReadings})
+        const catState = getCatState({ estimatedAction, prevCatState: acc.catState, averageKg })
         return {
             ...curr,
+            processMessage: true,
             history: newHistory,
             averageKg,
             estimatedAction,
             catState
         }
     }, { history: [] }),
+    filter(r => r.processMessage)
 
 
 )
