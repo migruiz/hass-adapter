@@ -88,16 +88,15 @@ const scaleReadings = sharedReadings.pipe(
     filter(r => r.value > -5000),
     map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10) })),
     scan((acc, curr) => {
+        const newHistory = [curr.valuekg, ...acc.history].slice(0, HISTORY_NUMBER)
+        const averageKg = getAverageKg(newHistory)
         return {
             ...curr,
-            history: [curr.valuekg, ...acc.history].slice(0, HISTORY_NUMBER)
+            history: newHistory,
+            averageKg
         }
     }, { history: [] }),
     filter(r=> r.history.length==HISTORY_NUMBER),
-    map(r => ({
-        ...r,
-        averageKg: getAverageKg(r.history)
-    })),
     map(r => (
         {
             ...r,
