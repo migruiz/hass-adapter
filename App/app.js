@@ -56,22 +56,22 @@ const scaleReadings = sharedReadings.pipe(
     filter(r => r.messageType === "scale"),
     filter(r => r.value > -5000),
     map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10).toFixed(1) })),
-    scan((acc, curr)=>{
+    scan((acc, curr) => {
         return {
             ...curr,
-            history:[...acc.history, curr.valuekg]
+            history: [curr.valuekg, ...acc.history].slice(0,5)
         }
-    }, {history:[]})
+    }, { history: [] })
 )
 
 
 scaleReadings
     .subscribe(async m => {
-       console.log(JSON.stringify(m))
+        console.log(JSON.stringify(m))
     })
 
 
-    return;
+return;
 
 
 heatingRelayReadings
