@@ -56,6 +56,11 @@ const HISTORY_NUMBER = 4
 const CAT_HOUSE_WEIGHT = 5
 const CAT_WEIGHT_THRESHOLD = 3
 
+const getAverageKg =(history)=>{
+    const average = history.reduce((sum, currentValue) => sum + currentValue, 0) / history.length
+    return (Math.round(average* 10) / 10)
+}
+
 const getCatState = ({ estimatedAction, prevCatState, averageKg }) => {
     if (!prevCatState) {
         return averageKg - CAT_HOUSE_WEIGHT < CAT_WEIGHT_THRESHOLD ? 'catOut' : 'catIn'
@@ -88,18 +93,10 @@ const scaleReadings = sharedReadings.pipe(
             history: [curr.valuekg, ...acc.history].slice(0, HISTORY_NUMBER)
         }
     }, { history: [] }),
+    filter(r=> r.history.length==HISTORY_NUMBER),
     map(r => ({
         ...r,
-        stableReading: r.history.length==HISTORY_NUMBER,
-    })),
-    filter(r=> r.stableReading),
-    map(r => ({
-        ...r,
-        averageKg: r.history.reduce((sum, currentValue) => sum + currentValue, 0) / r.history.length
-    })),
-    map(r => ({
-        ...r,
-        averageKg: (Math.round(r.averageKg * 10) / 10),
+        averageKg: getAverageKg(r.history)
     })),
     map(r => (
         {
