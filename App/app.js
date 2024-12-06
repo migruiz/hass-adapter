@@ -55,7 +55,9 @@ const heatingRelayReadings = sharedReadings.pipe(
 const scaleReadings = sharedReadings.pipe(
     filter(r => r.messageType === "scale"),
     filter(r => r.value > -5000),
-    map(r => ({ ...r, valuekg: (Math.round(r.value / 100) / 10).toFixed(1) }))
+    map(r => ({ ...r, valuekgNum: (Math.round(r.value / 100) / 10) })),
+    map(r => ({ ...r, valuekg: r.valuekgNum.toFixed(1) })),
+    map(r => ({ ...r, presence: r.valuekgNum >= 7 ? "ON" : "OFF" }))
 )
 
 
@@ -67,7 +69,9 @@ heatingRelayReadings
 
 scaleReadings
     .subscribe(async m => {
-        (await mqtt.getClusterAsync()).publishData('WINTERCAT/scale', m)
+        (await mqtt.getClusterAsync()).publishData('WINTERCAT/scale', m);
+        (await mqtt.getClusterAsync()).publishMessage('WINTERCAT/house/presence', m.presence)
+
     })
 
 
