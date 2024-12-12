@@ -4,7 +4,13 @@ const { map, shareReplay, startWith, filter, switchMap, distinctUntilChanged, sh
 global.mtqqLocalPath = process.env.MQTTLOCAL;
 global.mtqqLocalPath = 'mqtt://192.168.0.11';
 
+const HOME_WEIGHT = process.env.HOME_WEIGHT || 7.7
 
+const AWAY_WEIGHT = process.env.HOME_WEIGHT || 4.6
+
+const CUTOFF_WEIGHT = (HOME_WEIGHT + AWAY_WEIGHT) / 2
+
+console.log(` CAT HOUSE  CUTOFF WEIGHT ${CUTOFF_WEIGHT}`)
 
 
 
@@ -57,7 +63,7 @@ const scaleReadings = sharedReadings.pipe(
     filter(r => r.value > -5000),
     map(r => ({ ...r, valuekgNum: (Math.round(r.value / 100) / 10) })),
     map(r => ({ ...r, valuekg: r.valuekgNum.toFixed(1) })),
-    map(r => ({ ...r, presence: r.valuekgNum >= 7 ? "ON" : "OFF" }))
+    map(r => ({ ...r, presence: r.valuekgNum >= CUTOFF_WEIGHT ? "ON" : "OFF" }))
 )
 
 
